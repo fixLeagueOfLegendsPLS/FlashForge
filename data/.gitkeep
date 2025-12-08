@@ -1,0 +1,5 @@
+# This directory stores application data
+# - flashforge.db (SQLite database)
+# - backups/ (automatic backups)
+# - images/ (card images)
+# - audio/ (card audio files)
