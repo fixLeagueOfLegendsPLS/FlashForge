@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional, List, Tuple, Dict, Any
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine, func, or_, and_, desc
+from sqlalchemy import create_engine, func, or_, and_, desc, text
 from sqlalchemy.orm import sessionmaker, Session, joinedload
 
 from .models import Base, Deck, Card, Tag, StudySession, DailyStats, AppSettings
@@ -52,10 +52,11 @@ class DatabaseManager:
 
         # Enable WAL mode
         with self.engine.connect() as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.execute("PRAGMA synchronous=NORMAL")
-            conn.execute("PRAGMA cache_size=-64000")  # 64MB cache
-            conn.execute("PRAGMA foreign_keys=ON")
+            conn.execute(text("PRAGMA journal_mode=WAL"))
+            conn.execute(text("PRAGMA synchronous=NORMAL"))
+            conn.execute(text("PRAGMA cache_size=-64000"))  # 64MB cache
+            conn.execute(text("PRAGMA foreign_keys=ON"))
+            conn.commit()
 
         # Create session factory
         self.SessionLocal = sessionmaker(bind=self.engine, expire_on_commit=False)
