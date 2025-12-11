@@ -1,6 +1,6 @@
 """Database module for FlashForge."""
 
-from .models import Base, Deck, Card, Tag, DeckTag, StudySession, AppSettings
+from .models import Base, Deck, Card, Tag, deck_tags, StudySession, AppSettings, DailyStats
 from .db_manager import DatabaseManager
 
 __all__ = [
@@ -8,8 +8,9 @@ __all__ = [
     'Deck',
     'Card',
     'Tag',
-    'DeckTag',
+    'deck_tags',
     'StudySession',
     'AppSettings',
+    'DailyStats',
     'DatabaseManager'
 ]
