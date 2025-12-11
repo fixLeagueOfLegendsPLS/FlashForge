@@ -179,37 +179,37 @@ class StudyScreen(ctk.CTkFrame):
     def _create_controls(self):
         """Create response controls."""
         controls = ctk.CTkFrame(self, fg_color="transparent")
-        controls.grid(row=2, column=0, sticky="ew", padx=50, pady=(0, 30))
+        controls.grid(row=2, column=0, sticky="ew", padx=60, pady=(0, 40))
         controls.grid_columnconfigure((0, 1), weight=1)
 
         if self.mode == "flashcards":
-            # Simple know/don't know buttons
+            # Simple know/don't know buttons with better sizing
             self.dont_know_btn = ctk.CTkButton(
                 controls,
-                text=" Don't Know",
-                font=ctk.CTkFont(size=16),
+                text="Don't Know",
+                font=ctk.CTkFont(size=16, weight="bold"),
                 fg_color=self.theme.error,
                 hover_color="#dc2626",
-                height=50,
+                height=55,
                 corner_radius=12,
                 command=lambda: self._respond(False)
             )
-            self.dont_know_btn.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+            self.dont_know_btn.grid(row=0, column=0, sticky="ew", padx=(0, 12))
 
             self.know_btn = ctk.CTkButton(
                 controls,
-                text="Know ",
-                font=ctk.CTkFont(size=16),
+                text="Know",
+                font=ctk.CTkFont(size=16, weight="bold"),
                 fg_color=self.theme.success,
                 hover_color="#16a34a",
-                height=50,
+                height=55,
                 corner_radius=12,
                 command=lambda: self._respond(True)
             )
-            self.know_btn.grid(row=0, column=1, sticky="ew", padx=(10, 0))
+            self.know_btn.grid(row=0, column=1, sticky="ew", padx=(12, 0))
 
         elif self.mode == "learn":
-            # SM-2 quality buttons
+            # SM-2 quality buttons with better sizing
             btn_frame = ctk.CTkFrame(controls, fg_color="transparent")
             btn_frame.grid(row=0, column=0, columnspan=2)
 
@@ -224,42 +224,58 @@ class StudyScreen(ctk.CTkFrame):
                 btn = ctk.CTkButton(
                     btn_frame,
                     text=text,
-                    font=ctk.CTkFont(size=14),
+                    font=ctk.CTkFont(size=14, weight="bold"),
                     fg_color=color,
-                    height=45,
-                    width=100,
+                    height=50,
+                    width=110,
                     corner_radius=10,
                     command=lambda q=quality: self._respond_quality(q)
                 )
-                btn.pack(side="left", padx=5)
+                btn.pack(side="left", padx=8)
 
-        # Keyboard hint
+        # Keyboard hint with better styling
+        hint_frame = ctk.CTkFrame(controls, fg_color=self.theme.bg_secondary, corner_radius=8)
+        hint_frame.grid(row=1, column=0, columnspan=2, pady=(20, 0))
+
         hint_label = ctk.CTkLabel(
-            controls,
-            text="Space: flip  |  ←/→ or 1-4: respond  |  S: star",
+            hint_frame,
+            text="  Space: flip  |  ←/→: respond  |  S: star  |  H: hint",
             font=ctk.CTkFont(size=11),
             text_color=self.theme.text_muted
         )
-        hint_label.grid(row=1, column=0, columnspan=2, pady=(15, 0))
+        hint_label.pack(padx=15, pady=8)
 
     def _bind_keys(self):
         """Bind keyboard shortcuts."""
-        self.bind_all("<space>", lambda e: self.flip_card.flip())
-        self.bind_all("<Left>", lambda e: self._respond(False))
-        self.bind_all("<Right>", lambda e: self._respond(True))
-        self.bind_all("<Key-1>", lambda e: self._respond_quality(0))
-        self.bind_all("<Key-2>", lambda e: self._respond_quality(2))
-        self.bind_all("<Key-3>", lambda e: self._respond_quality(3))
-        self.bind_all("<Key-4>", lambda e: self._respond_quality(5))
-        self.bind_all("<Key-s>", lambda e: self._toggle_star())
-        self.bind_all("<Key-h>", lambda e: self._show_hint())
-        self.bind_all("<Escape>", lambda e: self._handle_back())
+        self._root = self.winfo_toplevel()
+        self._bindings = []
+
+        keys = [
+            ("<space>", lambda e: self.flip_card.flip()),
+            ("<Left>", lambda e: self._respond(False)),
+            ("<Right>", lambda e: self._respond(True)),
+            ("<Key-1>", lambda e: self._respond_quality(0)),
+            ("<Key-2>", lambda e: self._respond_quality(2)),
+            ("<Key-3>", lambda e: self._respond_quality(3)),
+            ("<Key-4>", lambda e: self._respond_quality(5)),
+            ("<Key-s>", lambda e: self._toggle_star()),
+            ("<Key-h>", lambda e: self._show_hint()),
+            ("<Escape>", lambda e: self._handle_back()),
+        ]
+
+        for key, callback in keys:
+            binding_id = self._root.bind(key, callback, "+")
+            self._bindings.append((key, binding_id))
 
     def _unbind_keys(self):
         """Unbind keyboard shortcuts."""
-        for key in ["<space>", "<Left>", "<Right>", "<Key-1>", "<Key-2>",
-                    "<Key-3>", "<Key-4>", "<Key-s>", "<Key-h>", "<Escape>"]:
-            self.unbind_all(key)
+        if hasattr(self, '_root') and hasattr(self, '_bindings'):
+            for key, binding_id in self._bindings:
+                try:
+                    self._root.unbind(key, binding_id)
+                except Exception:
+                    pass
+            self._bindings = []
 
     def set_deck(self, deck_name: str, cards: list):
         """Set the deck to study."""
@@ -436,11 +452,15 @@ class StudyScreen(ctk.CTkFrame):
         self.incorrect_count = 0
         self.progress_bar.set_progress(0)
 
+        # Unbind old keys
+        self._unbind_keys()
+
         # Rebuild UI
         for widget in self.winfo_children():
             widget.destroy()
 
         self._create_ui()
+        self._bind_keys()
         self._show_card(0)
 
     def _toggle_star(self):

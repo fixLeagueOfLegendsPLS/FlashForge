@@ -356,15 +356,18 @@ class ImportScreen(ctk.CTkToplevel):
     def _create_buttons(self):
         """Create action buttons."""
         btn_frame = ctk.CTkFrame(self, fg_color="transparent")
-        btn_frame.grid(row=5, column=0, sticky="ew", padx=25, pady=(10, 20))
+        btn_frame.grid(row=5, column=0, sticky="ew", padx=25, pady=(10, 25))
 
         cancel_btn = ctk.CTkButton(
             btn_frame,
             text="Cancel",
+            font=ctk.CTkFont(size=14),
             fg_color=self.theme.button_secondary_bg,
             text_color=self.theme.button_secondary_fg,
-            height=40,
-            width=100,
+            hover_color=self.theme.bg_hover,
+            height=44,
+            width=120,
+            corner_radius=10,
             command=self.destroy
         )
         cancel_btn.pack(side="left")
@@ -372,9 +375,12 @@ class ImportScreen(ctk.CTkToplevel):
         self.import_btn = ctk.CTkButton(
             btn_frame,
             text="Import",
+            font=ctk.CTkFont(size=14, weight="bold"),
             fg_color=self.theme.accent,
-            height=40,
-            width=120,
+            hover_color=self.theme.accent_hover,
+            height=44,
+            width=140,
+            corner_radius=10,
             state="disabled",
             command=self._do_import
         )
@@ -500,9 +506,17 @@ class ImportScreen(ctk.CTkToplevel):
 
             if preview.errors:
                 self.error_label.configure(text=preview.errors[0])
+            elif preview.warnings and not preview.cards:
+                # Show warning if no cards were parsed
+                self.error_label.configure(
+                    text=f"No cards found. Check separators. ({preview.warnings[0]})"
+                )
 
             self.preview_cards = preview.cards
-            self.count_label.configure(text=f"Found: {preview.total_count} cards")
+            found_text = f"Found: {len(preview.cards)} cards"
+            if preview.total_count != len(preview.cards):
+                found_text += f" (of {preview.total_count} lines)"
+            self.count_label.configure(text=found_text)
 
             # Recreate header
             headers = ["#", "Term", "Definition"]
@@ -552,11 +566,18 @@ class ImportScreen(ctk.CTkToplevel):
                 )
                 def_lbl.grid(row=i + 1, column=2, sticky="w", padx=10, pady=3)
 
-            # Enable import button if we have cards
-            if preview.cards:
-                self.import_btn.configure(state="normal")
-            else:
+            # Show message if no cards found
+            if not preview.cards:
+                no_cards_msg = ctk.CTkLabel(
+                    self.preview_frame,
+                    text="No cards found. Try adjusting the separator settings.",
+                    font=ctk.CTkFont(size=13),
+                    text_color=self.theme.warning
+                )
+                no_cards_msg.grid(row=1, column=0, columnspan=3, pady=30)
                 self.import_btn.configure(state="disabled")
+            else:
+                self.import_btn.configure(state="normal")
 
         except Exception as e:
             self.error_label.configure(text=f"Error: {str(e)}")
@@ -594,7 +615,7 @@ class DeckNameDialog(ctk.CTkToplevel):
         self.result = None
 
         self.title("Deck Name")
-        self.geometry("400x150")
+        self.geometry("450x180")
         self.resizable(False, False)
 
         self.transient(master)
@@ -602,22 +623,35 @@ class DeckNameDialog(ctk.CTkToplevel):
 
         self.configure(fg_color=self.theme.bg_primary)
 
-        # Label
+        # Title with icon
+        title_frame = ctk.CTkFrame(self, fg_color="transparent")
+        title_frame.pack(fill="x", padx=25, pady=(25, 15))
+
+        icon_label = ctk.CTkLabel(
+            title_frame,
+            text="",
+            font=("Segoe UI Emoji", 20)
+        )
+        icon_label.pack(side="left", padx=(0, 10))
+
         label = ctk.CTkLabel(
-            self,
+            title_frame,
             text="Enter a name for the imported deck:",
-            font=ctk.CTkFont(size=13),
+            font=ctk.CTkFont(size=14),
             text_color=self.theme.text_primary
         )
-        label.pack(padx=20, pady=(20, 10))
+        label.pack(side="left")
 
         # Entry
         self.name_entry = ctk.CTkEntry(
             self,
-            height=36,
-            font=ctk.CTkFont(size=14)
+            height=42,
+            font=ctk.CTkFont(size=15),
+            corner_radius=8,
+            border_width=2,
+            border_color=self.theme.accent
         )
-        self.name_entry.pack(fill="x", padx=20, pady=10)
+        self.name_entry.pack(fill="x", padx=25, pady=(0, 15))
         self.name_entry.insert(0, default_name)
         self.name_entry.select_range(0, "end")
         self.name_entry.focus()
@@ -625,31 +659,39 @@ class DeckNameDialog(ctk.CTkToplevel):
 
         # Buttons
         btn_frame = ctk.CTkFrame(self, fg_color="transparent")
-        btn_frame.pack(pady=15)
+        btn_frame.pack(fill="x", padx=25, pady=(5, 25))
 
         cancel_btn = ctk.CTkButton(
             btn_frame,
             text="Cancel",
+            font=ctk.CTkFont(size=13),
             fg_color=self.theme.button_secondary_bg,
             text_color=self.theme.button_secondary_fg,
-            height=35,
+            hover_color=self.theme.bg_hover,
+            height=40,
+            width=100,
+            corner_radius=8,
             command=self.destroy
         )
-        cancel_btn.pack(side="left", padx=5)
+        cancel_btn.pack(side="left")
 
         ok_btn = ctk.CTkButton(
             btn_frame,
             text="Import",
+            font=ctk.CTkFont(size=13, weight="bold"),
             fg_color=self.theme.accent,
-            height=35,
+            hover_color=self.theme.accent_hover,
+            height=40,
+            width=120,
+            corner_radius=8,
             command=self._confirm
         )
-        ok_btn.pack(side="left", padx=5)
+        ok_btn.pack(side="right")
 
         # Center
         self.update_idletasks()
-        x = master.winfo_rootx() + (master.winfo_width() - 400) // 2
-        y = master.winfo_rooty() + (master.winfo_height() - 150) // 2
+        x = master.winfo_rootx() + (master.winfo_width() - 450) // 2
+        y = master.winfo_rooty() + (master.winfo_height() - 180) // 2
         self.geometry(f"+{x}+{y}")
 
     def _confirm(self):
